@@ -1,7 +1,7 @@
 Package: MIAmaxent
 Type: Package
 Title: Maxent Distribution Model Selection
-Version: 0.3.6
+Version: 0.3.7
 Authors@R: c(
     person("Julien", "Vollering", email = "julien.vollering@hisf.no", role = c("aut", "cre")),
     person("Sabrina", "Mazzoni", email = "sabrina.mazzoni@nhm.uio.no", role = "aut"),
@@ -20,15 +20,14 @@ URL: https://github.com/julienvollering/MIAmaxent
 BugReports: https://github.com/julienvollering/MIAmaxent/issues
 RoxygenNote: 5.0.1
 SystemRequirements: Maxent.jar software, Java Runtime Environment (JRE)
-Imports: dplyr (>= 0.4.3), e1071 (>= 1.6-7), graphics (>= 3.3.0),
-        grDevices (>= 3.3.0), Hmisc (>= 3.17-2), raster (>= 2.5-8),
-        stats (>= 3.3.0), utils (>= 3.3.0)
+Imports: dplyr (>= 0.4.3), e1071 (>= 1.6-7), graphics, grDevices, Hmisc
+        (>= 3.17-2), raster (>= 2.5-8), stats, utils
 Suggests: knitr, rmarkdown, R.rsp
 VignetteBuilder: R.rsp
 NeedsCompilation: no
-Packaged: 2016-09-12 09:55:52 UTC; julienv
+Packaged: 2016-09-14 09:16:44 UTC; julienv
 Author: Julien Vollering [aut, cre],
   Sabrina Mazzoni [aut],
   Rune Halvorsen [aut]
 Repository: CRAN
-Date/Publication: 2016-09-12 15:08:52
+Date/Publication: 2016-09-14 11:46:11

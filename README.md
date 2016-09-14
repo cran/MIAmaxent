@@ -10,6 +10,22 @@ The predecessor to this package is the MIA Toolbox, which is described in detail
 
 **MIAmaxent** is built around the highly popular MaxEnt distribution modeling program (Phillips et al., 2006), but provides an alternative methodology for training, selecting, and using models. The major advantage in this alternative methodology is greater user control -- in variable transformations, in variable selection, and in model output. Comparisons also suggest that this methodology results in simpler models with equally good predictive ability, and reduces the risk of overfitting (Halvorsen et al., 2016).
 
+### Installation
+
+Install the release version from CRAN:
+
+``` r
+install.packages("MIAmaxent")
+```
+
+Or the development version from github
+
+``` r
+# install.packages('devtools')
+# install.packages('R.rsp')
+devtools::install_github("julienvollering/maxentmodelselectr", build_vignettes=TRUE)
+```
+
 ### System Requirements
 
 The maximum entropy algorithm utilized in this package is provided by the MaxEnt Java program (Phillips et al., 2006). This software is freely available, but may not be distributed further. Therefore, you must download the MaxEnt program (v3.3.3k) from <https://www.cs.princeton.edu/~schapire/maxent/>, and place the 'maxent.jar' file in the 'java' folder of this package. This folder can be located by the following R command: system.file("java", package = "MIAmaxent").
@@ -20,7 +36,7 @@ You must have the Java Runtime Environment (JRE) installed on your computer for 
 
 This diagram outlines a common workflow for users of this package. Functions are shown in red.
 
-![User workflow](/man/figures/workflow-flowchart.png)
+![](https://raw.githubusercontent.com/julienvollering/MIAmaxent/master/man/figures/workflow-flowchart.png)
 
 ### References
 
@@ -36,4 +52,4 @@ Phillips, S.J., Anderson, R.P. & Schapire, R.E. (2006) Maximum entropy modeling 
 
 ------------------------------------------------------------------------
 
-[![Travis-CI Build Status](https://travis-ci.org/julienvollering/MIAmaxent.svg?branch=master)](https://travis-ci.org/julienvollering/MIAmaxent)
+[![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/MIAmaxent)](https://cran.r-project.org/package=MIAmaxent) [![Travis-CI Build Status](https://travis-ci.org/julienvollering/MIAmaxent.svg?branch=master)](https://travis-ci.org/julienvollering/MIAmaxent)
