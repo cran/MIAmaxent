@@ -23,7 +23,7 @@ Or the development version from github
 ``` r
 # install.packages('devtools')
 # install.packages('R.rsp')
-devtools::install_github("julienvollering/maxentmodelselectr", build_vignettes=TRUE)
+devtools::install_github("julienvollering/MIAmaxent", build_vignettes=TRUE)
 ```
 
 ### System Requirements
@@ -52,4 +52,4 @@ Phillips, S.J., Anderson, R.P. & Schapire, R.E. (2006) Maximum entropy modeling 
 
 ------------------------------------------------------------------------
 
-[![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/MIAmaxent)](https://cran.r-project.org/package=MIAmaxent) [![Travis-CI Build Status](https://travis-ci.org/julienvollering/MIAmaxent.svg?branch=master)](https://travis-ci.org/julienvollering/MIAmaxent)
+[![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/MIAmaxent)](https://cran.r-project.org/package=MIAmaxent) [![Travis-CI Build Status](https://travis-ci.org/julienvollering/MIAmaxent.svg?branch=master)](https://travis-ci.org/julienvollering/MIAmaxent) [![CRAN download rate](https://cranlogs.r-pkg.org/badges/MIAmaxent)](https://cran.r-project.org/package=MIAmaxent)

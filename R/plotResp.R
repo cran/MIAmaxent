@@ -69,15 +69,15 @@ plotResp <- function(data, dvdata, EV, dir = NULL, logscale = FALSE, ...) {
 
   if (is.null(dir)) { dir <- getwd()}
 
-  dir <- file.path(dir, "plotResp")
-  dir.create(dir, showWarnings = FALSE)
+  fdir <- file.path(dir, "plotResp")
+  dir.create(fdir, showWarnings = FALSE, recursive = TRUE)
   evname <- names(dvdata[EV])
   if (!(evname %in% colnames(data))) {
     stop("The specified EV must be present in the untransformed data.
        E.g. interaction terms between multiple EVs are not supported. \n ",
       call. = FALSE)
   }
-  modeldir <- file.path(dir, paste0("response", evname))
+  modeldir <- file.path(fdir, paste0("response", evname))
   dir.create(modeldir, showWarnings = FALSE)
 
   .runjar(data[, 1], dvdata[[EV]], maxbkg = nrow(data) + 1, modeldir)
@@ -94,7 +94,7 @@ plotResp <- function(data, dvdata, EV, dir = NULL, logscale = FALSE, ...) {
 
     if (nrow(respPts) >= 250) {
       intervals <- min(c(ceiling(nrow(respPts) / 50), 100))
-      respPts$int <- .reg.interval(respPts[, 1], intervals)
+      respPts$int <- cut(respPts[, 1], max(2, intervals))
       grouped <- dplyr::group_by(respPts, int)
       respLine <- as.data.frame(dplyr::summarise(grouped, n = n(),
         intEV = mean(EV, na.rm = TRUE),
