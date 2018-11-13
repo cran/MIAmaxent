@@ -3,49 +3,52 @@
 #' \code{plotFOP} produces a Frequency of Observed Presence (FOP) plot for a
 #' given explanatory variable. An FOP plot shows the rate of occurrence of the
 #' response variable across intervals or levels of the explanatory variable. For
-#' continuous variables, the exponentially weighted moving average of the FOP
-#' values is added to the plot as a line. \code{plotFOP} also returns a list
-#' containing the optimum EV value, and a data frame containing the plotted data
-#' (for customizable plotting).
+#' continuous variables, a local regression ("loess") of the FOP values is added
+#' to the plot as a line. Data density is plotted in the background (grey) to
+#' help visualize where FOP values are more or less certain.
+#'
+#' A list of the optimum EV value and a data frame containing the plotted data
+#' is returned invisibly. Store invisibly returned output by assigning it to an
+#' object.
+#'
+#' In the local regression ("loess"), the plotted FOP values are regressed
+#' against their EV values. The points are weighted by the number of
+#' observations they represent, such that an FOP value from an interval with
+#' many observations is given more weight.
+#'
+#' For continuous variables, the returned value of 'EVoptimum' is based on the
+#' loess-smoothed FOP values, such that a point maximum in FOP may not always be
+#' considered the optimal value of EV.
 #'
 #' If the response variable in \code{data} represents presence/absence data, the
 #' result is an empirical frequency of presence curve, rather than a observed
 #' frequency of presence curve (see Stoea et al. [in press], Sommerfeltia).
 #'
-#' The returned value of 'EVoptimum' is based on the smoothed FOP values, such
-#' that an outlying maximum in FOP may, in some cases, not be considered the
-#' optimal value of EV.
-#'
 #' @param data Data frame containing the response variable in the first column
 #'   and explanatory variables in subsequent columns. The response variable
-#'   should represent presence or background, coded as: 1/NA. See Details for
-#'   information regarding presence/absence data. See also
-#'   \code{\link{readData}}.
+#'   should represent either presence and background (coded as 1/NA) or presence
+#'   and absence (coded as 1/0). See Details for information regarding
+#'   implications of occurrence data type. See also \code{\link{readData}}.
 #' @param EV Name or column index of the explanatory variable in \code{data} for
 #'   which to calculate FOP.
-#' @param smoothwindow Width of the smoothing window. Represents the number of
-#'   intervals included in an exponentially weighted moving average. Should be
-#'   odd, otherwise the window will be uncentered. Irrelevant for categorical
-#'   EVs.
-#' @param EVranging Logical. If \code{TRUE}, will range the EV scale to [0,1].
+#' @param span The proportion of FOP points included in the local regression
+#'   neighborhood. Should be between 0 and 1. Irrelevant for categorical EVs.
+#' @param intervals Number of intervals into which the continuous EV is divided.
+#'   Defaults to the minimum of N/10 and 100. Irrelevant for categorical EVs.
+#' @param ranging Logical. If \code{TRUE}, will range the EV scale to [0,1].
 #'   This is equivalent to plotting FOP over the linear transformation produced
 #'   by deriveVars. Irrelevant for categorical EVs.
-#' @param intervals Number of intervals into which the continuous EV is divided.
-#'   Defaults to the minimum of N/50 and 100. Irrelevant for categorical EVs.
-#' @param ... Arguments to be passed to \code{plot} to control the appearance of
-#'   the plot. For example: \itemize{ \item \code{cex} for size of points \item
-#'   \code{col} for color \item \code{xlim} for range of the x-axis }
 #'
 #' @return In addition to the graphical output, a list of 2: \enumerate{ \item
 #'   \code{EVoptimum}. The EV value (or level, for categorical EVs) at which FOP
 #'   is highest \item  \code{FOPdata}. A data frame containing the plotted data.
 #'   Columns in this data frame represent the following: EV interval ("int"),
-#'   number of points in the interval ("n"), mean EV value of the points in the
-#'   interval ("intEV"), mean RV value of the points in the interval ("intRV"),
-#'   and exponentially weighted moving average of intRV ("smoothRV"). For
-#'   categorical variables, only the number of points in the level ("n"), the
-#'   level name ("level"), and the mean RV value of the level ("levelRV") are
-#'   used.}
+#'   number of observations in the interval ("n"), mean EV value of the
+#'   observations in the interval ("intEV"), mean RV value of the observations
+#'   in the interval ("intRV"), and local regression predicted intRV ("loess").
+#'   For categorical variables, only the level name ("level"), the number of
+#'   observations in the level ("n"), and the mean RV value of the level
+#'   ("levelRV") are used.}
 #'
 #' @references Stoea, B., Halvorsen, R., Mazzoni, S. & Gusarov, V. (2016)
 #'   Sampling bias in presence-only data used for species distribution
@@ -53,85 +56,90 @@
 #'   manuscript.
 #'
 #' @examples
-#' FOPev11 <- plotFOP(toydata_sp1po, 2, intervals = 5, smoothwindow = 3)
-#' FOPev11 <- plotFOP(toydata_sp1po, 2, intervals = 8)
-#' FOPev12 <- plotFOP(toydata_sp1po, "EV12", intervals = 8, ylim=c(0,1))
+#' FOPev11 <- plotFOP(toydata_sp1po, 2)
+#' FOPev12 <- plotFOP(toydata_sp1po, "EV12", intervals = 8)
 #' FOPev12$EVoptimum
 #' FOPev12$FOPdata
 #'
 #' \dontrun{
 #' # From vignette:
 #' teraspifFOP <- plotFOP(grasslandPO, "teraspif")
-#' terslpdgFOP <- plotFOP(grasslandPO, "terslpdg", intervals = 25,  pch=20, cex=1.1, col = "red")
-#' terslpdgFOP$EVoptimum
-#' terslpdgFOP$FOPdata
+#' terslpdgFOP <- plotFOP(grasslandPO, "terslpdg")
+#' terslpdgFOP <- plotFOP(grasslandPO, "terslpdg", span = 0.75, intervals = 20)
+#' terslpdgFOP
+#' geobergFOP <- plotFOP(grasslandPO, 10)
+#' geobergFOP
 #' }
 #'
 #' @export
 
 
-plotFOP <- function(data, EV, smoothwindow = 5, EVranging = FALSE,
-                    intervals = NULL, ...) {
+plotFOP <- function(data, EV, span = 0.5, intervals = NULL, ranging = FALSE) {
 
+  if (EV==1) {
+    stop("'EV' cannot be the first column of 'data', which must be the response variable")
+  }
   df <- data.frame(RV = data[, 1], EV = data[, EV])
-  EVname <- colnames(data[, EV, drop = FALSE])
+  evname <- names(data[, EV, drop = FALSE])
 
   .binaryrvcheck(df[, 1])
   df[, 1][is.na(df[, 1])] <- 0
 
   if (class(df[, 2]) %in% c("numeric", "integer")) {
-    if (EVranging == T) {
+    if (ranging == T) {
       df[, 2] <- (df[, 2] - min(df[, 2])) / diff(range(df[, 2]))
     }
-    if (is.null(intervals)) {intervals <- min(c(ceiling(nrow(df) / 50), 100))}
-    df$int <- cut(df[, 2], max(2, intervals))
+    if (is.null(intervals)) {intervals <- min(c(ceiling(nrow(df)/10), 100))}
+    df$int <- cut(df[, 2], breaks=max(2, intervals))
 
     grouped <- dplyr::group_by(df, int)
     FOPdf <- as.data.frame(dplyr::summarise(grouped, n = n(),
-      intEV = mean(EV), intRV = mean(RV, na.rm=F)))
+      intEV = mean(EV), intRV = mean(RV, na.rm=FALSE)))
+    FOPdf$loess <- stats::predict(stats::loess(intRV~intEV, FOPdf,
+                                               weights=FOPdf$n, span=span))
 
-    graphics::plot(FOPdf$intRV ~ FOPdf$intEV,
-      main = paste0("FOP plot: ", EVname), xlab = EVname,
-      ylab = "Frequency of Observed Presence (FOP)", ...)
+    if (any(is.na(FOPdf$loess))) {
+      evoptimum <- FOPdf$intEV[which.max(FOPdf$intRV)]
+    } else { evoptimum <- FOPdf$intEV[which.max(FOPdf$loess)]  }
 
-    if (length(FOPdf$intRV) > smoothwindow) {
-      FOPdf$smoothRV <- .ewma(FOPdf$intRV, smoothwindow)
-      graphics::lines(FOPdf$intEV, FOPdf$smoothRV, col="grey")
-    } else { FOPdf$smoothRV <- NA }
+    FOP <- list(EVoptimum = evoptimum,
+                FOPdata = FOPdf)
 
-    maxRV <- FOPdf$smoothRV
-    maxRV[is.na(maxRV)] <- FOPdf$intRV[is.na(maxRV)]
-    EVoptimum <- FOPdf$intEV[which(maxRV == max(maxRV))]
-
-    while (length(EVoptimum) > 1) {
-      intervals <- intervals - 1
-      df$int <- cut(df[, 2], max(2, intervals))
-      grouped <- dplyr::group_by(df, int)
-      FOPdf <- as.data.frame(dplyr::summarise(grouped, n = n(),
-        intEV = mean(EV), intRV = mean(RV, na.rm=F)))
-      if (length(FOPdf$intRV) > smoothwindow) {
-        FOPdf$smoothRV <- .ewma(FOPdf$intRV, smoothwindow)
-      } else { FOPdf$smoothRV <- NA }
-      maxRV <- FOPdf$smoothRV
-      maxRV[is.na(maxRV)] <- FOPdf$intRV[is.na(maxRV)]
-      EVoptimum <- FOPdf$intEV[which(maxRV == max(maxRV))]
-    }
-
-    FOP <- list(EVoptimum = EVoptimum, FOPdata = FOPdf)
+    op <- graphics::par(mar=(c(5, 4, 4, 4) + 0.3))
+    on.exit(graphics::par(op))
+    dens <- stats::density(df[, 2])
+    graphics::plot(range(dens$x), range(dens$y), type="n", axes=FALSE, ann=FALSE)
+    graphics::polygon(x=c(min(dens$x), dens$x, max(dens$x)), y=c(0, dens$y, 0),
+                      border=NA, col="grey90")
+    graphics::axis(side=4, col="grey60", col.axis="grey60")
+    graphics::mtext("Kernel estimated data density", side=4, line=3, col="grey60")
+    graphics::par(new=TRUE)
+    graphics::plot(FOPdf$intRV ~ FOPdf$intEV, bty="n",
+                   main = paste0("FOP plot: ", evname), xlab = evname,
+                   ylab = "Frequency of Observed Presence (FOP)", pch=20)
+    graphics::points(FOPdf$loess ~ FOPdf$intEV, type="l", lwd=2, col="red")
   }
 
   if (class(df[, 2]) %in% c("factor", "character")) {
     grouped <- dplyr::group_by(df, EV)
-    FOPdf <- dplyr::summarise(grouped, n = n(), intRV = mean(RV, na.rm=F))
+    FOPdf <- as.data.frame(dplyr::summarise(grouped, n = n(),
+                                            lvlRV = mean(RV, na.rm=FALSE)))
 
-    graphics::barplot(FOPdf$intRV, names.arg = FOPdf$EV,
-      main = paste0("FOP plot: ", EVname), xlab = EVname,
-      ylab = "Frequency of Observed Presence (FOP)", ...)
+    FOP <- list(EVoptimum = FOPdf$EV[which.max(FOPdf$lvlRV)],
+                FOPdata = data.frame(level=FOPdf$EV, n=FOPdf$n,
+                                     levelRV=FOPdf$lvlRV))
 
-    FOP <- list(EVoptimum = FOPdf$EV[which(FOPdf$intRV == max(FOPdf$intRV))],
-      FOPdata = data.frame(n = FOPdf$n, level = FOPdf$EV,
-        levelRV = FOPdf$intRV))
+    op <- graphics::par(mar=(c(5, 4, 4, 4) + 0.3))
+    on.exit(graphics::par(op))
+    graphics::barplot(FOPdf$n, axes=FALSE, ann=FALSE, col="grey90", border=NA)
+    graphics::axis(side=4, col="grey60", col.axis="grey60")
+    graphics::mtext("Number of observations in data", side=4, line=3, col="grey60")
+    graphics::par(new=TRUE)
+    graphics::barplot(FOPdf$lvlRV, names.arg = FOPdf$EV,
+      main = paste0("FOP plot: ", evname), xlab = evname,
+      ylab = "Frequency of Observed Presence (FOP)", density=rep(20, nrow(FOPdf)), col="black",
+      las = 2)
   }
 
-  return(FOP)
+  invisible(FOP)
 }

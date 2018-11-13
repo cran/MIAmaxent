@@ -2,53 +2,57 @@
 % Please edit documentation in R/projectModel.R
 \name{projectModel}
 \alias{projectModel}
-\title{Project model to data.}
+\title{Project model across explanatory data.}
 \usage{
-projectModel(data, transformation, model, clamping = FALSE, rescale = FALSE,
-  raw = FALSE)
+projectModel(model, transformations, data, clamping = FALSE,
+  raw = FALSE, rescale = FALSE)
 }
 \arguments{
+\item{model}{The model to be projected, represented by an object of class
+'glm'. This may be the object returned by \code{\link{chooseModel}}, or the
+'selectedmodel' returned by \code{\link{selectEV}}.}
+
+\item{transformations}{Transformation functions used to create the derived
+variables in the model. I.e. the 'transformations' returned by
+\code{\link{deriveVars}}. Equivalently, the full file pathway of the
+'transformations.Rdata' file saved as a result of \code{\link{deriveVars}}.}
+
 \item{data}{Data frame of all the explanatory variables (EVs) included in the
-model, with column names matching EV names. See \code{\link{readData}}.}
-
-\item{transformation}{Full pathway of the 'transformations.Rdata' file
-containing the transformations used to build the model. This file is saved
-as a result of the \code{\link{deriveVars}} function. Equivalently, the
-second item in the list returned by \code{\link{deriveVars}} can be used
-directly.}
-
-\item{model}{Full pathway of the '.lambdas' file of the model in question.
-This file is saved as a result of \code{\link{selectEV}}.}
+model (see \code{\link{readData}}). Alternatively, an object of class
+'RasterStack' or 'RasterBrick' containing rasters for all EVs included in
+the model. Column or raster names must match EV names.}
 
 \item{clamping}{Logical. Do clamping \emph{sensu} Phillips et al. (2006).
 Default is \code{FALSE}.}
 
+\item{raw}{Logical. Return raw maxent output instead of probability ratio
+output (PRO)? Default is FALSE. Irrelevant for 'lr' class models.}
+
 \item{rescale}{Logical. Linearly rescale model output (PRO or raw) with
 respect to the projection \code{data}? This has implications for the
 interpretation of output values with respect to reference values (e.g. PRO
-= 1). See details.}
-
-\item{raw}{Logical. Return raw Maxent output instead of probability ratio
-output (PRO)? Default is FALSE.}
+= 1). See details. Irrelevant for 'lr' class models.}
 }
 \value{
-List of 2: \enumerate{ \item A data frame with the model output in
-  column 1 and the corresponding explanatory data in subsequent columns.
-  \item A data frame showing the range of \code{data} compared to the
-  training data, on a 0-1 scale.}
+List of 2: \enumerate{ \item output: A data frame with the model
+  output in column 1 and the corresponding explanatory data in subsequent
+  columns, or a raster containing predictions if \code{data} is a RasterStack
+  or RasterBrick. \item ranges: A list showing the range of \code{data}
+  compared to the training data, on a 0-1 scale.} If \code{data} is a
+  RasterStack or RasterBrick, the output is also plotted.
 }
 \description{
-\code{projectModel} Calculates the probability ratio output (PRO) of a given
-model for any points where values of the explanatory variables in the model
-are known.The transformations performed on the explanatory variables to build
-the model must be specified.
+\code{projectModel} calculates model predictions for any points where values
+of the explanatory variables in the model are known. It can be used to get
+model predictions for the training data, or to project the model to a new
+space or time.
 }
 \details{
 Missing data (NA) for a continuous variable will result in NA output for that
 point. Missing data for a categorical variable is treated as belonging to
 none of the categories.
 
-When \code{rescale = FALSE} the scale of the model output (PRO or raw)
+When \code{rescale = FALSE} the scale of the maxent model output (PRO or raw)
 returned by this function is dependent on the data used to train the model.
 For example, a location with PRO = 2 can be interpreted as having a
 probability of presence twice as high as an average site in the
@@ -62,38 +66,16 @@ scale which is dependent on the size of either the training data extent
 }
 \examples{
 \dontrun{
-modeloutput <- projectModel(newdat,
-   transformation = "D:/path/to/modeling/directory/deriveVars/transformations.Rdata",
-   model = "D:/path/to/modeling/directory/selectEV/round/model/1.lambdas")
-}
-
-proj <- projectModel(toydata_sp1po, toydata_dvs$transformations,
-   system.file("extdata/sommerfeltia", "1.lambdas", package = "MIAmaxent"))
-proj
-
-\dontrun{
 # From vignette:
-grasslandPrediction <- projectModel(grasslandPO,
-   transformation = grasslandDVs[[2]],
-   model = system.file("extdata", "1.lambdas", package = "MIAmaxent"))
-head(grasslandPrediction$output)
-grasslandPrediction$ranges
-
-# From vignette:
-library(raster)
-contfiles <- list.files(system.file("extdata", "EV_continuous", package = "MIAmaxent"),
-   full.names = TRUE)
-catfiles <- list.files(system.file("extdata", "EV_categorical", package = "MIAmaxent"),
-   full.names = TRUE)
-stack <- raster::stack(c(contfiles, catfiles))
-stackpts <- rasterToPoints(stack)
-spatialPrediction <- projectModel(stackpts,
-   transformation = grasslandDVs[[2]],
-   model = system.file("extdata", "1.lambdas", package = "MIAmaxent"))
-Predictionraster <- raster(stack, layer=0)
-Predictionraster <- rasterize(spatialPrediction$output[, c("x", "y")], Predictionraster,
-   field = spatialPrediction$output$PRO)
-plot(Predictionraster, colNA="black")
+EVstack <- raster::stack(c(
+  list.files(system.file("extdata", "EV_continuous", package="MIAmaxent"),
+             full.names=TRUE),
+  list.files(system.file("extdata", "EV_categorical", package="MIAmaxent"),
+             full.names=TRUE)))
+grasslandPreds <- projectModel(model = grasslandmodel,
+                               transformations = grasslandDVs$transformations,
+                               data = EVstack)
+grasslandPreds
 }
 
 }
@@ -110,4 +92,3 @@ Phillips, S.J., Anderson, R.P. & Schapire, R.E. (2006) Maximum
   entropy modeling of species geographic distributions. Ecological Modelling,
   190, 231-259.
 }
-

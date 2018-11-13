@@ -4,78 +4,80 @@
 \alias{plotFOP}
 \title{Plot Frequency of Observed Presence (FOP).}
 \usage{
-plotFOP(data, EV, smoothwindow = 5, EVranging = FALSE, intervals = NULL,
-  ...)
+plotFOP(data, EV, span = 0.5, intervals = NULL, ranging = FALSE)
 }
 \arguments{
 \item{data}{Data frame containing the response variable in the first column
 and explanatory variables in subsequent columns. The response variable
-should represent presence or background, coded as: 1/NA. See Details for
-information regarding presence/absence data. See also
-\code{\link{readData}}.}
+should represent either presence and background (coded as 1/NA) or presence
+and absence (coded as 1/0). See Details for information regarding
+implications of occurrence data type. See also \code{\link{readData}}.}
 
 \item{EV}{Name or column index of the explanatory variable in \code{data} for
 which to calculate FOP.}
 
-\item{smoothwindow}{Width of the smoothing window. Represents the number of
-intervals included in an exponentially weighted moving average. Should be
-odd, otherwise the window will be uncentered. Irrelevant for categorical
-EVs.}
-
-\item{EVranging}{Logical. If \code{TRUE}, will range the EV scale to [0,1].
-This is equivalent to plotting FOP over the linear transformation produced
-by deriveVars. Irrelevant for categorical EVs.}
+\item{span}{The proportion of FOP points included in the local regression
+neighborhood. Should be between 0 and 1. Irrelevant for categorical EVs.}
 
 \item{intervals}{Number of intervals into which the continuous EV is divided.
-Defaults to the minimum of N/50 and 100. Irrelevant for categorical EVs.}
+Defaults to the minimum of N/10 and 100. Irrelevant for categorical EVs.}
 
-\item{...}{Arguments to be passed to \code{plot} to control the appearance of
-the plot. For example: \itemize{ \item \code{cex} for size of points \item
-\code{col} for color \item \code{xlim} for range of the x-axis }}
+\item{ranging}{Logical. If \code{TRUE}, will range the EV scale to [0,1].
+This is equivalent to plotting FOP over the linear transformation produced
+by deriveVars. Irrelevant for categorical EVs.}
 }
 \value{
 In addition to the graphical output, a list of 2: \enumerate{ \item
   \code{EVoptimum}. The EV value (or level, for categorical EVs) at which FOP
   is highest \item  \code{FOPdata}. A data frame containing the plotted data.
   Columns in this data frame represent the following: EV interval ("int"),
-  number of points in the interval ("n"), mean EV value of the points in the
-  interval ("intEV"), mean RV value of the points in the interval ("intRV"),
-  and exponentially weighted moving average of intRV ("smoothRV"). For
-  categorical variables, only the number of points in the level ("n"), the
-  level name ("level"), and the mean RV value of the level ("levelRV") are
-  used.}
+  number of observations in the interval ("n"), mean EV value of the
+  observations in the interval ("intEV"), mean RV value of the observations
+  in the interval ("intRV"), and local regression predicted intRV ("loess").
+  For categorical variables, only the level name ("level"), the number of
+  observations in the level ("n"), and the mean RV value of the level
+  ("levelRV") are used.}
 }
 \description{
 \code{plotFOP} produces a Frequency of Observed Presence (FOP) plot for a
 given explanatory variable. An FOP plot shows the rate of occurrence of the
 response variable across intervals or levels of the explanatory variable. For
-continuous variables, the exponentially weighted moving average of the FOP
-values is added to the plot as a line. \code{plotFOP} also returns a list
-containing the optimum EV value, and a data frame containing the plotted data
-(for customizable plotting).
+continuous variables, a local regression ("loess") of the FOP values is added
+to the plot as a line. Data density is plotted in the background (grey) to
+help visualize where FOP values are more or less certain.
 }
 \details{
+A list of the optimum EV value and a data frame containing the plotted data
+is returned invisibly. Store invisibly returned output by assigning it to an
+object.
+
+In the local regression ("loess"), the plotted FOP values are regressed
+against their EV values. The points are weighted by the number of
+observations they represent, such that an FOP value from an interval with
+many observations is given more weight.
+
+For continuous variables, the returned value of 'EVoptimum' is based on the
+loess-smoothed FOP values, such that a point maximum in FOP may not always be
+considered the optimal value of EV.
+
 If the response variable in \code{data} represents presence/absence data, the
 result is an empirical frequency of presence curve, rather than a observed
 frequency of presence curve (see Stoea et al. [in press], Sommerfeltia).
-
-The returned value of 'EVoptimum' is based on the smoothed FOP values, such
-that an outlying maximum in FOP may, in some cases, not be considered the
-optimal value of EV.
 }
 \examples{
-FOPev11 <- plotFOP(toydata_sp1po, 2, intervals = 5, smoothwindow = 3)
-FOPev11 <- plotFOP(toydata_sp1po, 2, intervals = 8)
-FOPev12 <- plotFOP(toydata_sp1po, "EV12", intervals = 8, ylim=c(0,1))
+FOPev11 <- plotFOP(toydata_sp1po, 2)
+FOPev12 <- plotFOP(toydata_sp1po, "EV12", intervals = 8)
 FOPev12$EVoptimum
 FOPev12$FOPdata
 
 \dontrun{
 # From vignette:
 teraspifFOP <- plotFOP(grasslandPO, "teraspif")
-terslpdgFOP <- plotFOP(grasslandPO, "terslpdg", intervals = 25,  pch=20, cex=1.1, col = "red")
-terslpdgFOP$EVoptimum
-terslpdgFOP$FOPdata
+terslpdgFOP <- plotFOP(grasslandPO, "terslpdg")
+terslpdgFOP <- plotFOP(grasslandPO, "terslpdg", span = 0.75, intervals = 20)
+terslpdgFOP
+geobergFOP <- plotFOP(grasslandPO, 10)
+geobergFOP
 }
 
 }
@@ -85,4 +87,3 @@ Stoea, B., Halvorsen, R., Mazzoni, S. & Gusarov, V. (2016)
   modelling: assessment and effects on models. Sommerfeltia, submitted
   manuscript.
 }
-

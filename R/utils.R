@@ -10,36 +10,21 @@ if(getRversion() >= "2.15.1") {
 #' misinterpretation as presence/absence data)
 #'
 #' @param rv Vector of response variable values
+#' @keywords internal
+#' @noRd
 
 .binaryrvcheck <- function(rv) {
-  if (length(levels(as.factor(rv))) > 2) {
-    stop("The response variable must contain 2 levels only: presence (1)
-      and background (NA/0)", call. = FALSE)
-  }
-  if (anyNA(rv) && length(levels(as.factor(rv))) > 1) {
-    stop("The response variable must contain 2 levels only: presence (1)
-      and background (NA/0)", call. = FALSE)
-  }
   if (class(rv) != "numeric" && class(rv) != "integer") {
     stop("The response variable must be numeric or integer class: presence (1)
-      and background (NA/0)", call. = FALSE)
+         and either background or absence (NA/0)", call. = FALSE)
   }
-}
-
-
-
-#' checks representation of dvs in data
-#'
-#' @param dvnamesni Names of DVs in model (no interaction terms)
-#' @param data Data frame with EV column names
-
-.check.dvs.in.data <- function(dvnamesni, data) {
-  for (i in dvnamesni) {
-    a <- sub("_.*", "", i)
-    if (sum(colnames(data) == a) != 1) {
-      stop(paste(a, "must be represented in 'data' (exactly once)"),
-        call. = FALSE)
-    }
+  if (anyNA(rv) && !all(levels(as.factor(rv)) %in% "1")) {
+    stop("The response variable must contain exactly 2 levels: presence (1)
+       and either background or absence (NA/0)", call. = FALSE)
+  }
+  if (!anyNA(rv) && !all(levels(as.factor(rv)) %in% c("1", "0"))) {
+    stop("The response variable must contain exactly 2 levels: presence (1)
+       and either background or absence (NA/0)", call. = FALSE)
   }
 }
 
@@ -49,111 +34,63 @@ if(getRversion() >= "2.15.1") {
 #'
 #' @param dvnamesni Names of DVs in model (no interaction terms)
 #' @param alltransf List of transformation functions
+#' @keywords internal
+#' @noRd
 
 .check.dvs.in.transf <- function(dvnamesni, alltransf) {
   for (i in dvnamesni) {
     a <- paste0(i, "_transf")
     if (sum(names(alltransf) == a) != 1) {
-      stop(paste(i, "must be represented in 'transformation' (exactly once)"),
+      stop(paste(i, "must be represented in 'transformations' (exactly once)"),
         call. = FALSE)
     }
   }
 }
 
 
-#' Name and create directory
-#'
-#' Simultaneuosly pastes arguments into pathway and creates the directory
-#'
-#' @param ... Arguments to be pasted together into directory pathway
-
-.dirpath.create <- function(...) {
-  path <- file.path(...)
-  dir.create(path)
-  return(path)
-}
-
-
-
-#' calculates exponentially weighted moving average
-#'
-#' @param x numeric. Vector across which the moving average is to be applied.
-#' @param n integer. Width of the moving average window. Should be odd,
-#'   otherwise the window will be uncentered.
-#'
-#' @return vector of moving average values
-
-.ewma <- function(x, n) {
-  if (missing(n)) {
-    stop("Specify the width of the moving average window (n)", call. = FALSE)
-  }
-  if (n < 3) {
-    stop("Width of window should be at least 3", call. = FALSE)
-  }
-
-  if (n %% 2 != 0) {
-    expwindow <- stats::dexp(c(((n-1)/2):0,1:((n-1)/2)))
-  } else {
-    expwindow <- stats::dexp(c((n/2):0,1:((n-2)/2)))
-  }
-  weights <- expwindow/sum(expwindow)
-  as.numeric(stats::filter(x, weights, sides=2))
-}
-
-
 
 #' calculates optimum EV value based on FOP
 #'
-#' The optimum that is returned is based on the smoothed data, unless a maximum
-#' exists at the extremes of the EV (outside the 5-interval smoothing window).
+#' The optimum that is returned is based on the loess-smoothed data (for
+#' continuous variables).
 #'
-#' @param data Dataframe containing the response variable in the first column and
-#'   explanatory variables in the second column. The response variable should
-#'   represent presence or background, coded as: 1/NA.
-#' @param smoothwindow Width of the smoothing window (in an exponentially
-#'   weighted moving average). Irrelevant for categorical EVs.
+#' @param data Dataframe containing the response variable in the first column
+#'   and explanatory variables in the second column. The response variable
+#'   should represent presence or background, coded as: 1/NA.
+#' @param span The proportion of FOP points included in the local regression
+#'   neighborhood. Should be between 0 and 1. Irrelevant for categorical EVs.
 #' @param intervals Number of intervals into which the continuous EV is divided.
-#'   Defaults to the minimum of N/50 and 100. Irrelevant for categorical EVs.
+#'   Defaults to the minimum of N/10 and 100. Irrelevant for categorical EVs.
 #'
 #' @return the EV value at which FOP is highest (\code{EVoptimum})
+#' @keywords internal
+#' @noRd
 
-.fopoptimum <- function(data, smoothwindow = 5, intervals = NULL) {
+.fopoptimum <- function(df, span = 0.5, intervals = NULL) {
 
-  df <- data.frame(RV = data[, 1], EV = data[, 2])
+  df <- data.frame(RV = df[, 1], EV = df[, 2])
   .binaryrvcheck(df[, 1])
   df[, 1][is.na(df[, 1])] <- 0
 
-  if (!class(df[, 2]) %in% c("numeric", "integer")) {
-    stop("EVoptimum is calculated for numeric or integer class EVs only",
-      call. = F)
+  if (class(df[, 2]) %in% c("numeric", "integer")) {
+    if (is.null(intervals)) {intervals <- min(c(ceiling(nrow(df)/10), 100))}
+    df$int <- cut(df[, 2], breaks=max(2, intervals))
+    grouped <- dplyr::group_by(df, int)
+    FOPdf <- as.data.frame(dplyr::summarise(grouped, n = n(), intEV = mean(EV),
+                                            intRV = mean(RV, na.rm=FALSE)))
+    FOPdf$loess <- stats::predict(stats::loess(intRV~intEV, FOPdf,
+                                               weights=FOPdf$n, span=span))
+    if (any(is.na(FOPdf$loess))) {
+      EVoptimum <- FOPdf$intEV[which.max(FOPdf$intRV)]
+    } else { EVoptimum <- FOPdf$intEV[which.max(FOPdf$loess)]  }
+
   }
 
-  if (is.null(intervals)) {intervals <- min(c(ceiling(nrow(df) / 50), 100))}
-  df$int <- cut(df[, 2], max(2, intervals))
-
-  grouped <- dplyr::group_by(df, int)
-  FOPdf <- dplyr::summarise(grouped, intEV = mean(EV), intRV = mean(RV, na.rm=F))
-
-  if (length(FOPdf$intRV) > smoothwindow) {
-    FOPdf$smoothRV <- .ewma(FOPdf$intRV, smoothwindow)
-  } else { FOPdf$smoothRV <- NA }
-
-  maxRV <- FOPdf$smoothRV
-  maxRV[is.na(maxRV)] <- FOPdf$intRV[is.na(maxRV)]
-  EVoptimum <- FOPdf$intEV[which(maxRV == max(maxRV))]
-
-  while (length(EVoptimum) > 1) {
-    intervals <- intervals - 1
-    df$int <- cut(df[, 2], max(2, intervals))
-    grouped <- dplyr::group_by(df, int)
+  if (class(df[, 2]) %in% c("factor", "character")) {
+    grouped <- dplyr::group_by(df, EV)
     FOPdf <- as.data.frame(dplyr::summarise(grouped, n = n(),
-      intEV = mean(EV), intRV = mean(RV, na.rm=F)))
-    if (length(FOPdf$intRV) > smoothwindow) {
-      FOPdf$smoothRV <- .ewma(FOPdf$intRV, smoothwindow)
-    } else { FOPdf$smoothRV <- NA }
-    maxRV <- FOPdf$smoothRV
-    maxRV[is.na(maxRV)] <- FOPdf$intRV[is.na(maxRV)]
-    EVoptimum <- FOPdf$intEV[which(maxRV == max(maxRV))]
+                                            lvlRV = mean(RV, na.rm=FALSE)))
+    EVoptimum <- FOPdf$EV[which.max(FOPdf$lvlRV)]
   }
 
   return(EVoptimum)
@@ -161,20 +98,45 @@ if(getRversion() >= "2.15.1") {
 
 
 
-#' Loads a transformation object
+#' checks the validity of formulas
+#'
+#' @param formula Formula entered as selection start point
+#' @param dvdata List of data frames containing EVs
+#' @keywords internal
+#' @noRd
+
+.formulacheck <- function(formula, dvdata) {
+  if (any(attr(stats::terms(formula), "order") != 1)) {
+    stop("The provided formula may contain first-order explanatory variables
+      only (no interactions)", call. = FALSE)
+  }
+  trms <- labels(stats::terms(formula))
+  for (i in trms) {
+    if (sum(names(dvdata) == i) != 1) {
+      stop(paste(i, "must be represented in 'dvdata' (exactly once)"),
+        call. = FALSE)
+    }
+  }
+}
+
+
+#' Loads a transformations object
 #'
 #' From .Rdata file or from existing object
 #'
-#' @param transformation Vector of data. Must have scale [0,1]!
+#' @param transformations transformations object produced by deriveVars
+#' @keywords internal
+#' @noRd
 
-.load.transf <- function(transformation) {
-  if (class(transformation) == "character") {
-    alltransf <- get(load(transformation))
+.load.transf <- function(transformations) {
+  if (class(transformations) == "character") {
+    alltransf <- get(load(transformations))
   } else {
-    alltransf <- transformation
+    alltransf <- transformations
   }
-  if (!all(sapply(alltransf, class) == "function")) {
-    stop("transformation argument should contain functions only", call. = FALSE)
+  if (!all(sapply(alltransf[-1], class) == "function")) {
+    stop("'transformations' should be a transformations object returned by 'deriveVars'",
+         call. = FALSE)
   }
   return(alltransf)
 }
@@ -187,6 +149,8 @@ if(getRversion() >= "2.15.1") {
 #' \code{scalex}
 #'
 #' @param x Vector of data. Must have scale [0,1]!
+#' @keywords internal
+#' @noRd
 
 .minskew <- function(x) {
   cmin <- min(x)-10*(max(x)-min(x))
@@ -220,59 +184,50 @@ if(getRversion() >= "2.15.1") {
 
 
 
+#' Plotting helper function for testAUC
+#'
+#' @param fpr false positive rate vector
+#' @param tpr true positive rate vector
+#' @param AUC AUC value
+#' @param x PRO = 1 x-coordinate
+#' @param y PRO = 1 y-coordinate
+#' @keywords internal
+#' @noRd
+
+.plotROC <- function(fpr, tpr, AUC, PROpt, x, y, ...) {
+  args1 <- list(xlab="1 - specificity (false positive rate)",
+                ylab="Sensitivity (true positive rate)", col="red",
+                main=paste("AUC = ", signif(AUC, 3)))
+  inargs <- list(...)
+  args1[names(inargs)] <- inargs
+  do.call(graphics::plot, c(list(x=fpr, y=tpr, xlim=c(0,1), ylim=c(0,1),
+                                 type="l"), args1))
+
+  graphics::abline(0, 1, lty=3)
+
+  if (PROpt == TRUE) {
+    args2 <- list(cex=0.8, col="#999999", pch=19)
+    inargs <- list(...)
+    args2[names(inargs)] <- inargs
+    do.call(graphics::points, c(list(x=x, y=y), args2))
+
+    args3 <- list(cex=0.8, col="#999999")
+    inargs <- list(...)
+    args3[names(inargs)] <- inargs
+    do.call(graphics::text, c(list(x=x, y=y, labels="PRO = 1", pos=4), args3))
+  }
+}
+
+
+
 #' Reminders when using devtools::release
 #'
 #' @keywords internal
 
 release_questions <- function() {
   c(
-    "Have you reknitted the static vignette and copied the html file into /vignettes?",
-    "Have you removed the vignitte-produced directories?",
-    "Have you removed 'maxent.jar' from inst/java?"
+    "Have you reknitted the static vignette and copied the html file into /vignettes?"
   )
-}
-
-
-
-#' Executes basic maxent.jar run from R
-#'
-#' @param rv Vector of response variable values
-#' @param ev Data frame of explanatory variables
-#' @param maxbkg Maximum number of uninformed background points to use for
-#'   training
-#' @param dir Directory to which Maxent files will be written
-
-.runjar <- function(rv, ev, maxbkg = 10000, dir) {
-  jarpath <- system.file("java/maxent.jar", package = "MIAmaxent")
-  if (file.exists(jarpath) == FALSE) {
-    stop("Missing 'maxent.jar' file. Place this file in the java folder of the
-       package (see System Requirements in package description).", call. = FALSE)}
-  df <- data.frame("RV" = rv, "X" = -9999, "Y" = -9999, ev, check.names = FALSE)
-  samplesdf <- stats::na.omit(df)
-  environlayersdf <- df
-  csvfiles <- file.path(dir, c("samples.csv", "environlayers.csv"))
-  utils::write.csv(samplesdf, csvfiles[1], row.names = F)
-  utils::write.csv(environlayersdf, csvfiles[2], row.names = F)
-
-  jarflags1 <- " removeduplicates=FALSE addsamplestobackground=FALSE"
-  jarflags2 <- " autofeature=FALSE betamultiplier=0"
-  jarflags3 <- " quadratic=FALSE product=FALSE hinge=FALSE threshold=FALSE"
-  jarflags4 <- " outputformat=raw writebackgroundpredictions=TRUE"
-  jarflags5 <- " outputgrids=FALSE pictures=FALSE"
-  jarflags6 <- " extrapolate=FALSE writemess=FALSE plots=FALSE"
-  jarflags7 <- " doclamp=FALSE writeclampgrid=FALSE"
-  jarflags8 <- " autorun=TRUE threads=2 visible=FALSE warnings=FALSE"
-  jarflags <- paste0(jarflags1, jarflags2, jarflags3, jarflags4, jarflags5,
-    jarflags6, jarflags7, jarflags8)
-
-  command <- paste0("java -mx512m -jar ",
-    "\"", jarpath, "\"",
-    jarflags, " maximumbackground=", maxbkg,
-    " samplesfile=","\"", csvfiles[1], "\"",
-    " environmentallayers=", "\"", csvfiles[2], "\"",
-    " outputdirectory=", "\"", dir, "\\", "\"")
-  javacommand <- gsub("\\\\","/", command)
-  system(paste(javacommand), wait = TRUE)
 }
 
 
@@ -281,6 +236,8 @@ release_questions <- function() {
 #'
 #' @param x Vector of data.
 #' @param c Constant
+#' @keywords internal
+#' @noRd
 
 .scalex <- function(xnull, x, c) {
   if(e1071::skewness(xnull, na.rm = TRUE, type = 2) < 0) {
