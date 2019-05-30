@@ -18,7 +18,7 @@ infinitely-weighted logistic regression for model fitting. (Fithian & Hastie,
 }
 \details{
 MIAmaxent is intended primarily for maximum entropy distribution modeling
-(Phillips et al., 2006; Phillips et al., 2017), but provides an alternative
+(Phillips et al., 2006; Phillips et al., 2017), and provides an alternative
 to the standard methodology for training, selecting, and using models. The
 major advantage in this alternative methodology is greater user control -- in
 variable transformations, in variable selection, and in model output.
@@ -47,7 +47,7 @@ Halvorsen, R., Mazzoni, S., Bryn, A. & Bakkestuen, V. (2015)
   Opportunities for improved distribution modelling practice via a strict
   maximum likelihood interpretation of MaxEnt. Ecography, 38, 172-183.
 
-Halvorsen, R., Mazzoni, S., Dirksen, J.W., Naesset, E., Gobakken,
+Halvorsen, R., Mazzoni, S., Dirksen, J.W., Næsset, E., Gobakken,
   T. & Ohlson, M. (2016) How important are choice of model selection method
   and spatial autocorrelation of presence data for distribution modelling by
   MaxEnt? Ecological Modelling, 328, 108-118.
@@ -56,7 +56,7 @@ Mazzoni, S., Halvorsen, R. & Bakkestuen, V. (2015) MIAT: Modular
   R-wrappers for flexible implementation of MaxEnt distribution modelling.
   Ecological Informatics, 30, 215-221.
 
-Phillips, S.J., Anderson, R.P., Dudik, M., Schapire, R.E., &
+Phillips, S.J., Anderson, R.P., Dudík, M., Schapire, R.E., &
   Blair, M.E. (2017). Opening the black box: an open-source release of
   Maxent. Ecography, 40(7), 887-893.
 

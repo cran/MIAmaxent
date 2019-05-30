@@ -2,7 +2,7 @@ Package: MIAmaxent
 Type: Package
 Title: A Modular, Integrated Approach to Maximum Entropy Distribution
         Modeling
-Version: 1.0.0
+Version: 1.1.0
 Authors@R: c(
     person("Julien", "Vollering", email = "julien.vollering@hvl.no", role = c("aut", "cre")),
     person("Sabrina", "Mazzoni", email = "sabgis@uevora.pt", role = "aut"),
@@ -22,15 +22,16 @@ LazyData: TRUE
 URL: https://github.com/julienvollering/MIAmaxent
 BugReports: https://github.com/julienvollering/MIAmaxent/issues
 RoxygenNote: 6.1.1
-Imports: dplyr (>= 0.4.3), e1071 (>= 1.6-7), graphics, grDevices,
-        raster (>= 2.5-8), stats, utils
+Encoding: UTF-8
+Imports: dplyr (>= 0.4.3), e1071 (>= 1.6-7), graphics, raster (>=
+        2.5-8), stats, utils
 Suggests: knitr, rmarkdown, R.rsp
 VignetteBuilder: R.rsp
 NeedsCompilation: no
-Packaged: 2018-11-13 22:58:12 UTC; julienvollering
+Packaged: 2019-05-30 21:08:43 UTC; julienvollering
 Author: Julien Vollering [aut, cre],
   Sabrina Mazzoni [aut],
   Rune Halvorsen [aut],
   Steven Phillips [cph]
 Repository: CRAN
-Date/Publication: 2018-11-13 23:20:10 UTC
+Date/Publication: 2019-05-30 21:20:04 UTC

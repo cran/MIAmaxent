@@ -22,7 +22,7 @@
 #'
 #' If the response variable in \code{data} represents presence/absence data, the
 #' result is an empirical frequency of presence curve, rather than a observed
-#' frequency of presence curve (see Stoea et al. [in press], Sommerfeltia).
+#' frequency of presence curve (see Støa et al. [2018], Sommerfeltia).
 #'
 #' @param data Data frame containing the response variable in the first column
 #'   and explanatory variables in subsequent columns. The response variable
@@ -38,6 +38,13 @@
 #' @param ranging Logical. If \code{TRUE}, will range the EV scale to [0,1].
 #'   This is equivalent to plotting FOP over the linear transformation produced
 #'   by deriveVars. Irrelevant for categorical EVs.
+#' @param densitythreshold Numeric. Intervals containing fewer than this number
+#'   of observations will be represented with an open symbol in the plot.
+#'   Irrelevant for categorical EVs.
+#' @param ... Arguments to be passed to \code{plot} or \code{barplot} to control
+#'   the appearance of the plot. For example: \itemize{ \item \code{lwd} for
+#'   line width \item \code{cex.main} for size of plot title \item \code{space}
+#'   for space between bars }
 #'
 #' @return In addition to the graphical output, a list of 2: \enumerate{ \item
 #'   \code{EVoptimum}. The EV value (or level, for categorical EVs) at which FOP
@@ -50,10 +57,12 @@
 #'   observations in the level ("n"), and the mean RV value of the level
 #'   ("levelRV") are used.}
 #'
-#' @references Stoea, B., Halvorsen, R., Mazzoni, S. & Gusarov, V. (2016)
+#' @references Støa, B., R. Halvorsen, S. Mazzoni, and V. I. Gusarov. (2018).
 #'   Sampling bias in presence-only data used for species distribution
-#'   modelling: assessment and effects on models. Sommerfeltia, submitted
-#'   manuscript.
+#'   modelling: theory and methods for detecting sample bias and its effects on
+#'   models. Sommerfeltia 38:1–53.
+
+
 #'
 #' @examples
 #' FOPev11 <- plotFOP(toydata_sp1po, 2)
@@ -74,7 +83,8 @@
 #' @export
 
 
-plotFOP <- function(data, EV, span = 0.5, intervals = NULL, ranging = FALSE) {
+plotFOP <- function(data, EV, span = 0.5, intervals = NULL, ranging = FALSE,
+                    densitythreshold = NULL, ...) {
 
   if (EV==1) {
     stop("'EV' cannot be the first column of 'data', which must be the response variable")
@@ -111,12 +121,17 @@ plotFOP <- function(data, EV, span = 0.5, intervals = NULL, ranging = FALSE) {
     graphics::plot(range(dens$x), range(dens$y), type="n", axes=FALSE, ann=FALSE)
     graphics::polygon(x=c(min(dens$x), dens$x, max(dens$x)), y=c(0, dens$y, 0),
                       border=NA, col="grey90")
-    graphics::axis(side=4, col="grey60", col.axis="grey60")
+    graphics::axis(side=4, col="grey60", col.axis="grey60", las=1)
     graphics::mtext("Kernel estimated data density", side=4, line=3, col="grey60")
     graphics::par(new=TRUE)
-    graphics::plot(FOPdf$intRV ~ FOPdf$intEV, bty="n",
-                   main = paste0("FOP plot: ", evname), xlab = evname,
-                   ylab = "Frequency of Observed Presence (FOP)", pch=20)
+    if (is.null(densitythreshold)) {densitythreshold <- 0}
+    closedsymbols <- as.numeric(FOPdf$n >= densitythreshold)+1
+    args1 <- list(bty="n", main = paste0("FOP plot: ", evname), xlab = evname,
+                  ylab = "Frequency of Observed Presence (FOP)", las=1,
+                  pch=c(1,20)[closedsymbols])
+    inargs <- list(...)
+    args1[names(inargs)] <- inargs
+    do.call(graphics::plot, c(list(x=FOPdf$intEV, y=FOPdf$intRV), args1))
     graphics::points(FOPdf$loess ~ FOPdf$intEV, type="l", lwd=2, col="red")
   }
 
@@ -132,13 +147,15 @@ plotFOP <- function(data, EV, span = 0.5, intervals = NULL, ranging = FALSE) {
     op <- graphics::par(mar=(c(5, 4, 4, 4) + 0.3))
     on.exit(graphics::par(op))
     graphics::barplot(FOPdf$n, axes=FALSE, ann=FALSE, col="grey90", border=NA)
-    graphics::axis(side=4, col="grey60", col.axis="grey60")
+    graphics::axis(side=4, col="grey60", col.axis="grey60", las=1)
     graphics::mtext("Number of observations in data", side=4, line=3, col="grey60")
     graphics::par(new=TRUE)
-    graphics::barplot(FOPdf$lvlRV, names.arg = FOPdf$EV,
-      main = paste0("FOP plot: ", evname), xlab = evname,
-      ylab = "Frequency of Observed Presence (FOP)", density=rep(20, nrow(FOPdf)), col="black",
-      las = 2)
+    args1 <- list(names.arg = FOPdf$EV, main = paste0("FOP plot: ", evname),
+                  xlab = evname, ylab = "Frequency of Observed Presence (FOP)",
+                  density=rep(20, nrow(FOPdf)), col="black", las = 2)
+    inargs <- list(...)
+    args1[names(inargs)] <- inargs
+    do.call(graphics::barplot, c(list(FOPdf$lvlRV), args1))
   }
 
   invisible(FOP)
