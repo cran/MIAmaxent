@@ -2,7 +2,8 @@
 
 # MIAmaxent
 
-## v.1.1.0
+Read our open-access paper in *Ecology and Evolution* introducing
+MIAmaxent: <https://doi.org/10.1002/ece3.5654>.
 
 ### Description
 

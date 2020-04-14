@@ -1,3 +1,7 @@
+# MIAmaxent 1.1.1
+
+* Patch for compatibility with dplyr v1.0
+
 # MIAmaxent 1.1.0
 
 * Added ellipsis to plotFOP() for easier customization of graphic
