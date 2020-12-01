@@ -2,6 +2,12 @@
 
 # MIAmaxent
 
+[![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/MIAmaxent)](https://cran.r-project.org/package=MIAmaxent)
+[![Travis-CI Build
+Status](https://travis-ci.org/julienvollering/MIAmaxent.svg?branch=master)](https://travis-ci.org/julienvollering/MIAmaxent)
+[![CRAN download
+rate](https://cranlogs.r-pkg.org/badges/MIAmaxent)](https://cran.r-project.org/package=MIAmaxent)
+
 Read our open-access paper in *Ecology and Evolution* introducing
 MIAmaxent: <https://doi.org/10.1002/ece3.5654>.
 
@@ -14,7 +20,7 @@ selection of variables by nested model comparison, and flexible model
 evaluation and projection. It follows principles based on the
 maximum-likelihood interpretation of maximum entropy modeling (Halvorsen
 et al., 2015), and uses infinitely-weighted logistic regression for
-model fitting. (Fithian & Hastie, 2013).
+model fitting (Fithian & Hastie, 2013).
 
 **MIAmaxent** is intended primarily for maximum entropy distribution
 modeling (Phillips et al., 2006; Phillips et al., 2017), and provides an
@@ -26,7 +32,7 @@ methodology results in simpler models with equally good predictive
 ability, and reduces the risk of overfitting (Halvorsen et al., 2016).
 
 The predecessor to this package is the MIA Toolbox, which is described
-in detail in Mazzoni et al. (2015).
+in detail in Mazzoni et al. (2015).
 
 ### Installation
 
@@ -36,18 +42,17 @@ Install the release version from CRAN:
 install.packages("MIAmaxent")
 ```
 
-Or the development version from github:
+Or the development version from GitHub:
 
 ``` r
-# install.packages('devtools')
-devtools::install_github("julienvollering/MIAmaxent", build_vignettes = TRUE)
+# install.packages(c("remotes", "R.rsp"))
+remotes::install_github("julienvollering/MIAmaxent", build_vignettes = TRUE)
 ```
 
 ### User Workflow
 
 This diagram outlines a common workflow for users of this package.
-Functions are shown in
-red.
+Functions are shown in red.
 
 ![](https://raw.githubusercontent.com/julienvollering/MIAmaxent/master/man/figures/workflow-flowchart.png)
 
@@ -77,11 +82,3 @@ Ecography, 40(7), 887-893.
 Phillips, S.J., Anderson, R.P. & Schapire, R.E. (2006) Maximum entropy
 modeling of species geographic distributions. Ecological Modelling, 190,
 231-259.
-
------
-
-[![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/MIAmaxent)](https://cran.r-project.org/package=MIAmaxent)
-[![Travis-CI Build
-Status](https://travis-ci.org/julienvollering/MIAmaxent.svg?branch=master)](https://travis-ci.org/julienvollering/MIAmaxent)
-[![CRAN download
-rate](https://cranlogs.r-pkg.org/badges/MIAmaxent)](https://cran.r-project.org/package=MIAmaxent)
