@@ -21,74 +21,78 @@
 #' scale which is dependent on the size of either the training data extent
 #' (\code{rescale = FALSE}) or projection data extent (\code{rescale = TRUE}).
 #'
-#' @param model The model to be projected, represented by an object of class
-#'   'glm'. This may be the object returned by \code{\link{chooseModel}}, or the
-#'   'selectedmodel' returned by \code{\link{selectEV}}.
+#' @param model The model to be projected. This may be the object returned by
+#'   \code{\link{chooseModel}}, or the 'selectedmodel' returned by
+#'   \code{\link{selectEV}}.
 #' @param transformations Transformation functions used to create the derived
 #'   variables in the model. I.e. the 'transformations' returned by
 #'   \code{\link{deriveVars}}. Equivalently, the full file pathway of the
 #'   'transformations.Rdata' file saved as a result of \code{\link{deriveVars}}.
 #' @param data Data frame of all the explanatory variables (EVs) included in the
 #'   model (see \code{\link{readData}}). Alternatively, an object of class
-#'   'RasterStack' or 'RasterBrick' containing rasters for all EVs included in
-#'   the model. Column or raster names must match EV names.
+#'   'SpatRaster' containing rasters for all EVs included in the model. Column
+#'   or raster names must match EV names.
 #' @param clamping Logical. Do clamping \emph{sensu} Phillips et al. (2006).
 #'   Default is \code{FALSE}.
 #' @param raw Logical. Return raw maxent output instead of probability ratio
-#'   output (PRO)? Default is FALSE. Irrelevant for 'lr' class models.
+#'   output (PRO)? Default is FALSE. Irrelevant for "LR"-type models.
 #' @param rescale Logical. Linearly rescale model output (PRO or raw) with
 #'   respect to the projection \code{data}? This has implications for the
 #'   interpretation of output values with respect to reference values (e.g. PRO
-#'   = 1). See details. Irrelevant for 'lr' class models.
+#'   = 1). See details. Irrelevant for "LR"-type models.
+#' @param filename Full file pathway to write raster model predictions if
+#'   \code{data} is an object of class 'SpatRaster'. File format is inferred
+#'   from the filename extension as in \code{terra::writeRaster}.
 
 #'
-#' @return List of 2: \enumerate{ \item output: A data frame with the model
-#'   output in column 1 and the corresponding explanatory data in subsequent
-#'   columns, or a raster containing predictions if \code{data} is a RasterStack
-#'   or RasterBrick. \item ranges: A list showing the range of \code{data}
-#'   compared to the training data, on a 0-1 scale.} If \code{data} is a
-#'   RasterStack or RasterBrick, the output is also plotted.
+#'@return List of 2: \enumerate{ \item output: A data frame with the model
+#'  output in column 1 and the corresponding explanatory data in subsequent
+#'  columns, or a raster containing predictions if \code{data} is a SpatRaster.
+#'  \item ranges: A list showing the range of \code{data} compared to the
+#'  training data, on a 0-1 scale.} If \code{data} is a SpatRaster, the output
+#'  is also plotted.
 #'
 #'
-#' @references Halvorsen, R. (2013) A strict maximum likelihood explanation of
-#'   MaxEnt, and some implications for distribution modelling. Sommerfeltia, 36,
-#'   1-132.
-#' @references Halvorsen, R., Mazzoni, S., Bryn, A. & Bakkestuen, V. (2015)
-#'   Opportunities for improved distribution modelling practice via a strict
-#'   maximum likelihood interpretation of MaxEnt. Ecography, 38, 172-183.
-#' @references Phillips, S.J., Anderson, R.P. & Schapire, R.E. (2006) Maximum
-#'   entropy modeling of species geographic distributions. Ecological Modelling,
-#'   190, 231-259.
+#'@references Halvorsen, R. (2013) A strict maximum likelihood explanation of
+#'  MaxEnt, and some implications for distribution modelling. Sommerfeltia, 36,
+#'  1-132.
+#'@references Halvorsen, R., Mazzoni, S., Bryn, A. & Bakkestuen, V. (2015)
+#'  Opportunities for improved distribution modelling practice via a strict
+#'  maximum likelihood interpretation of MaxEnt. Ecography, 38, 172-183.
+#'@references Phillips, S.J., Anderson, R.P. & Schapire, R.E. (2006) Maximum
+#'  entropy modeling of species geographic distributions. Ecological Modelling,
+#'  190, 231-259.
 #'
 #' @examples
 #' \dontrun{
 #' # From vignette:
-#' EVstack <- raster::stack(c(
-#'   list.files(system.file("extdata", "EV_continuous", package="MIAmaxent"),
-#'              full.names=TRUE),
-#'   list.files(system.file("extdata", "EV_categorical", package="MIAmaxent"),
-#'              full.names=TRUE)))
+#' EVfiles <- c(list.files(system.file("extdata", "EV_continuous", package="MIAmaxent"),
+#'                         full.names=TRUE),
+#'              list.files(system.file("extdata", "EV_categorical", package="MIAmaxent"),
+#'                         full.names=TRUE))
+#' EVstack <- rast(EVfiles)
+#' names(EVstack) <- gsub(".asc", "", basename(EVfiles))
 #' grasslandPreds <- projectModel(model = grasslandmodel,
 #'                                transformations = grasslandDVs$transformations,
 #'                                data = EVstack)
 #' grasslandPreds
 #' }
 #'
-#' @export
+#'@export
 
 
 projectModel <- function(model, transformations, data, clamping = FALSE,
-                         raw = FALSE, rescale = FALSE) {
+                         raw = FALSE, rescale = FALSE, filename = NULL) {
 
   dvnamesni <- names(model$betas)[grep(":", names(model$betas), invert = TRUE)]
   evnames <- unique(sub("_.*", "", dvnamesni))
 
   map <- FALSE
-  if (class(data)[1] %in% c("RasterStack", "RasterBrick")) {
+  if (inherits(data, "SpatRaster")) {
     map <- TRUE
     names(data) <- make.names(names(data), allow_ = FALSE)
     evstack <- data[[evnames]]
-    data <- raster::as.data.frame(evstack, na.rm = TRUE)
+    data <- terra::as.data.frame(evstack, na.rm = TRUE)
     cells <- as.numeric(row.names(data))
   }
 
@@ -105,11 +109,11 @@ projectModel <- function(model, transformations, data, clamping = FALSE,
     evdata <- data[, x]
     anevtransf <- alltransf[grepl(paste0(x, "_"), names(alltransf))][[1]]
     xnull <- environment(anevtransf)$xnull
-    if (class(xnull) %in% c("numeric", "integer")) {
+    if (inherits(xnull, c("numeric", "integer"))) {
       L <- (evdata - range(xnull)[1]) / diff(range(xnull))
       return(range(L, na.rm = TRUE))
     }
-    if (class(xnull) %in% c("factor", "character")) {
+    if (inherits(xnull, c("factor", "character"))) {
       if (all(evdata %in% xnull)) {return("inside")} else {return("outside")}
     }
   })
@@ -126,7 +130,7 @@ projectModel <- function(model, transformations, data, clamping = FALSE,
   })
   newdata <- as.data.frame(do.call(cbind, dvdatani))
   names(newdata) <- dvnamesni
-  type <- if (class(model)[1] == "iwlr") {
+  type <- if (inherits(model, "MIAmaxent_iwlr")) {
     ifelse(raw == TRUE, "raw", "PRO")
   } else { "response" }
 
@@ -140,7 +144,7 @@ projectModel <- function(model, transformations, data, clamping = FALSE,
     preds <- stats::predict(model, newdata, type)
   }
 
-  if (class(model)[1] == "iwlr" && rescale == TRUE) {
+  if (inherits(model, "MIAmaxent_iwlr") && rescale == TRUE) {
     if (raw == TRUE) { preds <- preds/sum(preds, na.rm = TRUE)
     } else { preds <- (preds/sum(preds, na.rm = TRUE)) * sum(!is.na(preds)) }
   }
@@ -149,12 +153,15 @@ projectModel <- function(model, transformations, data, clamping = FALSE,
   colnames(Output)[1] <- type
 
   if (map == TRUE) {
-    values <- rep(NA, raster::ncell(evstack))
+    values <- rep(NA, terra::ncell(evstack))
     values[cells] <- Output[,1]
     outraster <- evstack[[1]]
-    outraster <- raster::setValues(outraster, values)
+    outraster <- terra::setValues(outraster, values)
     names(outraster) <- type
-    raster::plot(outraster)
+    if (!is.null(filename)) {
+      terra::writeRaster(outraster, filename)
+    }
+    terra::plot(outraster)
     return(list(output = outraster, ranges = Ranges))
   } else {
     return(list(output = Output, ranges = Ranges))
