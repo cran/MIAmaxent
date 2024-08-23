@@ -1,7 +1,7 @@
-eb1bd29fff31ddd028fe3d8a7b4811cd *DESCRIPTION
+d68485fea091596f88997627e38106a9 *DESCRIPTION
 a386bea813ce26a51e2a2c7d7b1a3a75 *LICENSE
 9f0824526eb268ce698da83d53871dfc *NAMESPACE
-a8e127ef76b6b4ba1d0ebea26d6e6f9f *NEWS.md
+6bcf00047117e728f5a5fd2e7ea987fb *NEWS.md
 81af7fcf69c52b5f58047e9ce218c829 *R/MIAmaxent-package.R
 fe4e9f0709924fff626651451d5526f5 *R/calculateRVA.R
 f598c14c9f5a0241a07a5716d31764ad *R/chooseModel.R
@@ -15,7 +15,7 @@ df528743384991db6deb367f1725162c *R/parsdvs.R
 a64a18b0d788c88588677f34b0b76846 *R/plotFOP.R
 03eb242c6da9bab90755a82a309522bf *R/plotResp.R
 6ced2bc6eb9a8a1390fbbf6be56a8e54 *R/plotResp2.R
-498dba467ecbec673b27dc92d13e817e *R/projectModel.R
+c3a32272e528ff95a3c7ad6bda1a4f7b *R/projectModel.R
 bfae530c0f764904e1f475d5b8d37e4f *R/readData.R
 9f2bce6440a880293a4a1222a17a0776 *R/runIWLR.R
 565b3af62890f40666769ce28608bd4f *R/runLR.R
@@ -25,7 +25,7 @@ c377e840ef6b0dd9fe771f6f5815e480 *R/splselect.R
 05db2dc079836a5137bb645820ffa027 *R/testAUC.R
 27647ac3caf58ece9726171dae6c3ca5 *R/transfclosures.R
 83c7126f4ce5109eca4a39d875336e73 *R/utils.R
-e3d6f7d4247cce55797e2031a6dc291d *README.md
+1bb40412b08e74c3539172d1e89ee762 *README.md
 2836b2c5db38c9819380bd093383d89d *build/partial.rdb
 b4e0d686d020e594e41d1862192146e1 *build/vignette.rds
 3953db7f3f7dc027f5ac98a518d030e1 *data/toydata_dvs.rda
@@ -33,7 +33,7 @@ ce832b4717117bd79e235a954dd22365 *data/toydata_seldvs.rda
 773a9286373116475c53d2da51b14597 *data/toydata_selevs.rda
 48ff42563bc89c16e571a03a746fb0b7 *data/toydata_sp1po.rda
 edcdb9efa1fb7951521ca9553951f02c *inst/CITATION
-36ff37816f2de5caa8748002b27f6935 *inst/doc/a-modeling-example.html
+eb6652b4db822e6ae202fbc47a0e6d4a *inst/doc/a-modeling-example.html
 79f5c859194838a7ac9c422707c1f215 *inst/doc/a-modeling-example.html.asis
 6c62bbbad175690808e3daf08177cc9c *inst/extdata/EV_categorical/geoberg.asc
 6b348eae3fc3d64cd0a491d53fcb368f *inst/extdata/EV_categorical/geolmja1.asc
@@ -76,5 +76,5 @@ a4736d33cc9ad9210aa342529ce3c1bc *man/testAUC.Rd
 a31da9346891cc7702e3d2b4dfdd59ad *man/toydata_seldvs.Rd
 ab1408a2a90c9c67ca6ef94699792660 *man/toydata_selevs.Rd
 70ddf6d3793f6bcda3cfc5546a23d619 *man/toydata_sp1po.Rd
-c784c2c759dbac643401f0c79f3e459e *vignettes/a-modeling-example.Rmd
+c0e2fb7d6f31c5e96b9e4de2fe18b3cb *vignettes/a-modeling-example.Rmd
 79f5c859194838a7ac9c422707c1f215 *vignettes/a-modeling-example.html.asis
