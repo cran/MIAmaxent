@@ -256,60 +256,60 @@ auc_result <- testAUC(
   data = validation_data
 )
 
-## ----reconstruct-spatial, include=FALSE---------------------------------------
-# To create spatial predictions directly, we need raster data
-# Here we reconstruct the (incomplete) raster from coordinates, and metadata instead
-
-# Create projection data  (similar to validation data but with coordinates)
-proj_data <- data.frame(
-  x = pa_merged$x,
-  y = pa_merged$y,
-  pa_merged[, predictors]
-)
-
-# Rename columns to match training data
-col_name_map <- c(
-  x = "x",
-  y = "y",
-  col_name_map
-)
-names(proj_data) <- col_name_map[names(proj_data)]
-
-# Convert the categorical variable to factor
-proj_data$bedrock.calcareous <- as.factor(proj_data$bedrock.calcareous)
-
-# SWI
-# Prepared by Niklaus E. Zimmermann and Antoine Guisan
-# 13 variables:  see SWI\01_metadata_SWI_environment.csv
-# Coordinate reference system: Transverse, spheroid Bessel (note all data has had a constant shift applied to it)
-# EPSG:21781
-# Units: meters
-# Raster cell size: 100m
-
-# Create a raster to fill in with predictions
-# Here we assume env_data has columns 'x' and 'y' for coordinates
-coordinates <- proj_data[, c("x", "y")]
-env_raster <- rast(
-  xmin = min(coordinates$x),
-  xmax = max(coordinates$x),
-  ymin = min(coordinates$y),
-  ymax = max(coordinates$y),
-  resolution = 100,
-  crs = "EPSG:21781"
-)
-
-# Create a simple prediction map using the environmental data
-predictions <- projectModel(
-  model = train_model$selectedmodel,
-  transformations = train_DVs$transformations,
-  data = proj_data
-)
-
-# Rasterize the predictions
-pred_raster <- rasterize(as.matrix(coordinates), env_raster,
-  values = predictions$output$PRO
-)
-plot(pred_raster, main = "Predicted Probability of Occurrence")
+## ----reconstruct-spatial, include=FALSE, eval=FALSE---------------------------
+# # To create spatial predictions directly, we need raster data
+# # Here we reconstruct the (incomplete) raster from coordinates, and metadata instead
+# 
+# # Create projection data  (similar to validation data but with coordinates)
+# proj_data <- data.frame(
+#   x = pa_merged$x,
+#   y = pa_merged$y,
+#   pa_merged[, predictors]
+# )
+# 
+# # Rename columns to match training data
+# col_name_map <- c(
+#   x = "x",
+#   y = "y",
+#   col_name_map
+# )
+# names(proj_data) <- col_name_map[names(proj_data)]
+# 
+# # Convert the categorical variable to factor
+# proj_data$bedrock.calcareous <- as.factor(proj_data$bedrock.calcareous)
+# 
+# # SWI
+# # Prepared by Niklaus E. Zimmermann and Antoine Guisan
+# # 13 variables:  see SWI\01_metadata_SWI_environment.csv
+# # Coordinate reference system: Transverse, spheroid Bessel (note all data has had a constant shift applied to it)
+# # EPSG:21781
+# # Units: meters
+# # Raster cell size: 100m
+# 
+# # Create a raster to fill in with predictions
+# # Here we assume env_data has columns 'x' and 'y' for coordinates
+# coordinates <- proj_data[, c("x", "y")]
+# env_raster <- rast(
+#   xmin = min(coordinates$x),
+#   xmax = max(coordinates$x),
+#   ymin = min(coordinates$y),
+#   ymax = max(coordinates$y),
+#   resolution = 100,
+#   crs = "EPSG:21781"
+# )
+# 
+# # Create a simple prediction map using the environmental data
+# predictions <- projectModel(
+#   model = train_model$selectedmodel,
+#   transformations = train_DVs$transformations,
+#   data = proj_data
+# )
+# 
+# # Rasterize the predictions
+# pred_raster <- rasterize(as.matrix(coordinates), env_raster,
+#   values = predictions$output$PRO
+# )
+# plot(pred_raster, main = "Predicted Probability of Occurrence")
 
 ## ----auc-po, include=FALSE----------------------------------------------------
 testAUC(
